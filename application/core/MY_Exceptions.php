@@ -66,9 +66,18 @@ class MY_Exceptions extends CI_Exceptions {
 			$email_message = "";
 			foreach($this->exceptions as $e)
 			{
+				$filepath = str_replace("\\", "/", $e["filepath"]);
+
+				// For safety reasons we do not show the full file path
+				if (FALSE !== strpos($filepath, '/'))
+				{
+					$x = explode('/', $filepath);
+					$filepath = $x[count($x)-2].'/'.end($x);
+				}
+
 				if(!isset($email_subject))
-					$email_subject = $this->_replace_short_tags($subject, $e["severity"], $e["message"], $e["filepath"], $e["line"]);
-				$email_message .= $this->_replace_short_tags($content . "\n", $e["severity"], $e["message"], $e["filepath"], $e["line"]);
+					$email_subject = $this->_replace_short_tags($subject, $e["severity"], $e["message"], $filepath, $e["line"]);
+				$email_message .= $this->_replace_short_tags($content . "\n", $e["severity"], $e["message"], $filepath, $e["line"]);
 			}
 
 			// set message and send
