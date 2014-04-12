@@ -30,36 +30,55 @@ class MY_Exceptions extends CI_Exceptions {
      */
     function log_exception($severity, $message, $filepath, $line)
     {
-        $ci =& get_instance();
+		$this->exceptions[] = [
+						"severity" => $severity,
+						"message" => $message,
+						"filepath" => $filepath,
+						"line" => $line];
+
+        // do the rest of the codeigniter stuff
+        parent::log_exception($severity, $message, $filepath, $line);
+    }
+
+    // --------------------------------------------------------------------------
+
+	/**
+	 * Send all the exceptions as an email - to be called once from controller
+	 *
+	 */
+	function send_exceptions()
+	{
+	    $ci =& get_instance();
 
         // this allows different params for different environments
         $ci->config->load('email_php_errors');
 
         // if it's enabled
-        if (config_item('email_php_errors'))
+        if (config_item('email_php_errors') && !empty($this->exceptions))
         {
 			// set up email with config values
 			$ci->load->library('email');
-			$ci->email->from(config_item('php_error_from'));
-			$ci->email->to(config_item('php_error_to'));
 
-			// set up subject
+			//get config
 			$subject = config_item('php_error_subject');
-			$subject = $this->_replace_short_tags($subject, $severity, $message, $filepath, $line);
-			$ci->email->subject($subject);
-
-			// set up content
 			$content = config_item('php_error_content');
-			$content = $this->_replace_short_tags($content, $severity, $message, $filepath, $line);
+
+			$email_message = "";
+			foreach($this->exceptions as $e)
+			{
+				if(!isset($email_subject))
+					$email_subject = $this->_replace_short_tags($subject, $e["severity"], $e["message"], $e["filepath"], $e["line"]);
+				$email_message .= $this->_replace_short_tags($content . "\n", $e["severity"], $e["message"], $e["filepath"], $e["line"]);
+			}
 
 			// set message and send
-			$ci->email->message($content);
+			$ci->email->from(config_item('php_error_from'));
+			$ci->email->to(config_item('php_error_to'));
+			$ci->email->subject($email_subject);
+			$ci->email->message($email_message);
 			$ci->email->send();
 		}
-
-        // do the rest of the codeigniter stuff
-        parent::log_exception($severity, $message, $filepath, $line);
-    }
+	}
 
     // --------------------------------------------------------------------------
 
