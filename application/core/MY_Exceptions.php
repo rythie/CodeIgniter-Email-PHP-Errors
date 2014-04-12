@@ -80,6 +80,8 @@ class MY_Exceptions extends CI_Exceptions {
 				$email_message .= $this->_replace_short_tags($content . "\n", $e["severity"], $e["message"], $filepath, $e["line"]);
 			}
 
+			$email_message .= $this->_get_page_detail();
+
 			// set message and send
 			$ci->email->from(config_item('php_error_from'));
 			$ci->email->to(config_item('php_error_to'));
@@ -87,6 +89,36 @@ class MY_Exceptions extends CI_Exceptions {
 			$ci->email->message($email_message);
 			$ci->email->send();
 		}
+	}
+
+	/**
+	 * once per email detail
+	 *
+	 */
+
+	private function _get_page_detail()
+	{
+	    $ci =& get_instance();
+		$ci->load->library('session');
+		$userdata = $ci->session->all_userdata();
+
+		// Server
+		$detail = "\n_SERVER\n";
+		$detail .= print_r($_SERVER, TRUE);
+
+		// Get info
+		if(!empty($_GET))
+			$detail .= "\n_GET\n" . print_r($_GET, TRUE);
+
+		// Post info
+		if(!empty($_POST))
+			$detail .= "\n_POST\n" . print_r($_POST, TRUE);
+
+		// Session info
+		if(!empty($userdata))
+			$detail .= "\nsession->all_userdata():\n " . print_r($userdata, TRUE);
+
+		return $detail;
 	}
 
     // --------------------------------------------------------------------------
